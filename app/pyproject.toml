@@ -1,11 +1,10 @@
 [project]
 name = "app"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
   "eli5==0.13.0",
+  "en-core-web-sm",
   "matplotlib==3.5.3",
   "numba>=0.60.0",
   "numpy==1.22.4",
@@ -21,6 +20,10 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = [
-    "thesis_detector",
-]
+members = ["thesis_detector"]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
+[dependency-groups]
+dev = ["pip>=25.0.1", "ruff>=0.11.5"]
