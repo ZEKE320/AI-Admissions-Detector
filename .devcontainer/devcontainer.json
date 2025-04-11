@@ -1,0 +1,65 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+  "name": "AI-Admissions-Detector",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "image": "mcr.microsoft.com/devcontainers/base:noble",
+
+  "mounts": [
+    "source=${env:HOME}/.cache,target=/home/vscode/.cache,type=bind,consistency=cached"
+  ],
+
+  "hostRequirements": {
+    "gpu": "optional"
+  },
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.9",
+      "installTools": false
+    }
+    // "ghcr.io/devcontainers/features/nvidia-cuda": {
+    //   "installCudnn": true,
+    //   "cudaVersion": "12.5",
+    //   "cudnnVersion": "9.4.0.58"
+    // }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "pip install -U pip && pip install uv",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "GitHub.copilot",
+        "ms-toolsai.datawrangler",
+        "ms-toolsai.jupyter",
+        "ms-vscode.vscode-copilot-data-analysis",
+        "VisualStudioExptTeam.vscodeintellicode-completions",
+        "mutantdino.resourcemonitor",
+        "njpwerner.autodocstring",
+        "redhat.fabric8-analytics",
+        "seatonjiang.gitmoji-vscode",
+        "SonarSource.sonarlint-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "tamasfe.even-better-toml",
+        "bierner.markdown-mermaid"
+      ]
+    }
+  }
+
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+}
