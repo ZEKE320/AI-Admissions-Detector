@@ -7,7 +7,9 @@ EXPOSE 7860
 COPY app.py .
 COPY custom_models.py .
 COPY .streamlit/config.toml .streamlit/
+COPY models/baseline_model_lr_longer.joblib models/
 COPY models/baseline_model_lr2.joblib models/
+COPY models/baseline_model_nb_longer.joblib models/
 COPY models/baseline_model_nb2.joblib models/
 
 HEALTHCHECK CMD curl --fail http://localhost:7860/_stcore/health
