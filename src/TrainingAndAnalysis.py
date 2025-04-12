@@ -225,13 +225,13 @@ print(classification_report(y_test, model_nb.predict(test_sentences)))
 
 # earlystopping callback
 class EarlyStopping:
-    def __init__(self, patience=2, delta=0.000001):
-        self.patience = patience
-        self.counter = 0
-        self.best_score = None
-        self.delta = delta
+    def __init__(self, patience: int = 2, delta: float = 0.000001) -> None:
+        self.patience: int = patience
+        self.counter: int = 0
+        self.best_score: float | None = None
+        self.delta: float = delta
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss: float, model: nn.Module) -> bool:
         score = val_loss
 
         if self.best_score is None:
@@ -248,7 +248,7 @@ class EarlyStopping:
             self.counter = 0
         return False
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss: float, model: nn.Module) -> None:
         torch.save(model.state_dict(), "checkpoint.pt")
         print(
             f"Validation loss decreased ({self.best_score:.6f} --> {val_loss:.6f}). Saving model ..."
@@ -264,16 +264,16 @@ class EarlyStopping:
 # %%
 ## DistilBert
 class TextDataset(Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
+    def __init__(self, encodings: dict[str, list[int]], labels: np.ndarray) -> None:
+        self.encodings: dict[str, list[int]] = encodings
+        self.labels: np.ndarray = labels
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
         item["labels"] = torch.tensor(self.labels[idx])
         return item
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.labels)
 
 
@@ -303,15 +303,17 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
 class TransformerBasedModelDistilBert(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super(TransformerBasedModelDistilBert, self).__init__()
-        self.bert = DistilBertModel.from_pretrained("distilbert-base-uncased")
-        self.dropout = nn.Dropout(0.55)
-        self.fc = nn.Linear(768, 2)
+        self.bert: DistilBertModel = DistilBertModel.from_pretrained(
+            "distilbert-base-uncased"
+        )
+        self.dropout: nn.Dropout = nn.Dropout(0.55)
+        self.fc: nn.Linear = nn.Linear(768, 2)
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None
-    ):
+    ) -> torch.Tensor:
         input_shape = input_ids.size()
         if attention_mask is None:
             attention_mask = torch.ones(input_shape, device=device)
@@ -387,25 +389,25 @@ model.load_state_dict(torch.load("checkpoint.pt"))
 
 
 ### Save as HuggingFace Model
-class MyConfig(PretrainedConfig):
-    model_type = "distilbert"
+class MyConfigDistil(PretrainedConfig):
+    model_type: str = "distilbert"
 
-    def __init__(self, final_dropout=0.55, **kwargs):
+    def __init__(self, final_dropout: float = 0.55, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.final_dropout = final_dropout
+        self.final_dropout: float = final_dropout
 
 
-class MyHFModel(PreTrainedModel):
-    config_class = MyConfig
+class MyHFModel_DistilBased(PreTrainedModel):
+    config_class: type[MyConfigDistil] = MyConfigDistil
 
-    def __init__(self, config):
+    def __init__(self, config: MyConfigDistil) -> None:
         super().__init__(config)
-        self.config = config
-        self.model = model
+        self.config: MyConfigDistil = config
+        self.model: nn.Module = model
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None
-    ):
+    ) -> torch.Tensor:
         input_shape = input_ids.size()
         if attention_mask is None:
             attention_mask = torch.ones(input_shape)
@@ -413,8 +415,8 @@ class MyHFModel(PreTrainedModel):
         return self.model(input_ids=input_ids, attention_mask=attention_mask)
 
 
-config = MyConfig(0.55)
-Custom_HF_Model = MyHFModel(config)
+config = MyConfigDistil(0.55)
+Custom_HF_Model = MyHFModel_DistilBased(config)
 
 Custom_HF_Model.save_pretrained("HF_DistilBertBasedModelAppDocs")
 
@@ -449,15 +451,15 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
 class TransformerBasedModelBert(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super(TransformerBasedModelBert, self).__init__()
-        self.bert = BertModel.from_pretrained("bert-base-uncased")
-        self.dropout = nn.Dropout(0.55)
-        self.fc = nn.Linear(768, 2)
+        self.bert: BertModel = BertModel.from_pretrained("bert-base-uncased")
+        self.dropout: nn.Dropout = nn.Dropout(0.55)
+        self.fc: nn.Linear = nn.Linear(768, 2)
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None
-    ):
+    ) -> torch.Tensor:
         input_shape = input_ids.size()
         if attention_mask is None:
             attention_mask = torch.ones(input_shape, device=device)
@@ -531,32 +533,32 @@ for epoch in range(num_epochs):
 model.load_state_dict(torch.load("checkpoint.pt"))
 
 
-class MyConfig(PretrainedConfig):
-    model_type = "bert"
+class MyConfigBert(PretrainedConfig):
+    model_type: str = "bert"
 
-    def __init__(self, final_dropout=0.55, **kwargs):
+    def __init__(self, final_dropout: float = 0.55, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.final_dropout = final_dropout
+        self.final_dropout: float = final_dropout
 
 
 class MyHFModel_BertBased(PreTrainedModel):
-    config_class = MyConfig
+    config_class: type[MyConfigBert] = MyConfigBert
 
-    def __init__(self, config):
+    def __init__(self, config: MyConfigBert) -> None:
         super().__init__(config)
-        self.config = config
-        self.model = model
+        self.config: MyConfigBert = config
+        self.model: nn.Module = model
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None
-    ):
+    ) -> torch.Tensor:
         input_shape = input_ids.size()
         if attention_mask is None:
             attention_mask = torch.ones(input_shape, device=device)
         return self.model(input_ids=input_ids, attention_mask=attention_mask)
 
 
-config = MyConfig(0.55)
+config = MyConfigBert(0.55)
 Custom_HF_Model = MyHFModel_BertBased(config)
 
 Custom_HF_Model.save_pretrained("HF_BertBasedModelAppDocs")
@@ -709,8 +711,8 @@ for epoch in range(num_epochs):
 model.load_state_dict(torch.load("checkpoint.pt"))
 
 ### Save as HuggingFace Model
-config = MyConfig(0.55)
-Custom_HF_Model = MyHFModel(config)
+config = MyConfigDistil(0.55)
+Custom_HF_Model = MyHFModel_DistilBased(config)
 
 Custom_HF_Model.save_pretrained("HF_DistilBertBasedModelAppDocs2")
 
@@ -798,7 +800,7 @@ for epoch in range(num_epochs):
 ### best weights
 model.load_state_dict(torch.load("checkpoint.pt"))
 
-config = MyConfig(0.55)
+config = MyConfigBert(0.55)
 Custom_HF_Model = MyHFModel_BertBased(config)
 
 Custom_HF_Model.save_pretrained("HF_BertBasedModelAppDocs2")
