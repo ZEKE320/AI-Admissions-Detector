@@ -65,9 +65,9 @@ def text_cleaning(text):
     converts the string to lowercase, removes any leading or trailing whitespace,
     and removes any punctuation from the string.
     """
-    text = nlp(text)
+    doc = nlp(text)
     text = " ".join(
-        [token.text for token in text if token.ent_type_ not in ["PERSON", "DATE"]]
+        [token.text for token in doc if token.ent_type_ not in ["PERSON", "DATE"]]
     )
 
     pattern1 = r"f\d+"
