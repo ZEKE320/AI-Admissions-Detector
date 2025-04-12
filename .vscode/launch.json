@@ -8,12 +8,21 @@
       "python": "${workspaceFolder}/.venv/bin/python",
       "program": "${workspaceFolder}/.venv/bin/streamlit",
       "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/app",
       "args": [
         "run",
         "app.py",
         "--server.port=7860",
         "--server.address=localhost"
       ]
+    },
+    {
+      "name": "Python Debugger",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/app/.venv/bin/python",
+      "program": "${file}",
+      "console": "integratedTerminal"
     }
   ]
 }
