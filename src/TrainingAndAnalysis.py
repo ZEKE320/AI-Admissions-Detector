@@ -579,10 +579,10 @@ generated = pd.DataFrame(df_wiki["generated_intro"]).rename(
 )
 generated["Target"] = 1
 
-Wiki = originals.append(generated1).reset_index(drop=True)
+Wiki = pd.concat([originals, generated], ignore_index=True)
 Wiki = Wiki.sample(len(Wiki))
 
-df_larger = df[["Text", "Target"]].append(Wiki)
+df_larger = pd.concat([df[["Text", "Target"]], Wiki], ignore_index=True)
 df_larger = df_larger.sample(len(df_larger))
 df_larger["Text"] = df_larger["Text"].map(lambda x: text_cleaning(x))
 df_larger = df_larger.drop_duplicates()
