@@ -9,34 +9,27 @@ import re
 import string
 from typing import Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy
 import spacy
 import torch
 import torch.nn as nn
-from eli5.lime import TextExplainer
-from eli5.lime.samplers import MaskingTextSampler
 from joblib import dump
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from torch.utils.data import DataLoader, Dataset
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    BertForSequenceClassification,
+from transformers.configuration_utils import PretrainedConfig
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.bert.modeling_bert import (
     BertModel,
-    BertTokenizer,
-    DistilBertModel,
-    DistilBertTokenizer,
-    PretrainedConfig,
-    PreTrainedModel,
 )
+from transformers.models.bert.tokenization_bert import BertTokenizer
+from transformers.models.distilbert.modeling_distilbert import DistilBertModel
+from transformers.models.distilbert.tokenization_distilbert import DistilBertTokenizer
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -66,13 +59,12 @@ As I embark on the next stage of my academic journey, I am eager to continue bui
 
 # %%
 def text_cleaning(text):
-    """
-    This function takes a string as input and returns a formatted version of the string.
+    """This function takes a string as input and returns a formatted version of the string.
+
     The function replaces specific substrings in the input string with empty strings,
     converts the string to lowercase, removes any leading or trailing whitespace,
     and removes any punctuation from the string.
     """
-
     text = nlp(text)
     text = " ".join(
         [token.text for token in text if token.ent_type_ not in ["PERSON", "DATE"]]
@@ -208,11 +200,11 @@ model_lr.fit(X=train_sentences, y=y_train)
 model_nb = Pipeline([("tf-idf", TfidfVectorizer()), ("clf", MultinomialNB())])
 model_nb.fit(X=train_sentences, y=y_train)
 
-print(f"TF-IDF + LR")
+print("TF-IDF + LR")
 print(f"Accuracy: {model_lr.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_lr.predict(test_sentences)), "\n")
 
-print(f"TF-IDF + NB")
+print("TF-IDF + NB")
 print(f"Accuracy: {model_nb.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_nb.predict(test_sentences)))
 
@@ -611,11 +603,11 @@ model_lr.fit(X=train_sentences, y=y_train)
 model_nb = Pipeline([("tf-idf", TfidfVectorizer()), ("clf", MultinomialNB())])
 model_nb.fit(X=train_sentences, y=y_train)
 
-print(f"TF-IDF + LR")
+print("TF-IDF + LR")
 print(f"Accuracy: {model_lr.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_lr.predict(test_sentences)), "\n")
 
-print(f"TF-IDF + NB")
+print("TF-IDF + NB")
 print(f"Accuracy: {model_nb.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_nb.predict(test_sentences)))
 
