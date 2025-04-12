@@ -1,38 +1,51 @@
+# %% [markdown]
+# # AI/Human Text Classification
+#
+# This project focuses on developing models to distinguish between AI-generated and human-written texts.
+
+# %%
 # Import libraries
+import re
+import string
+from typing import Optional
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import string
-import spacy
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import classification_report, confusion_matrix
 import scipy
-from joblib import dump
+import spacy
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from transformers import (
-    BertModel,
-    BertTokenizer,
-    DistilBertTokenizer,
-    DistilBertModel,
-    AutoModelForSequenceClassification,
-    BertForSequenceClassification,
-    AutoTokenizer,
-    PreTrainedModel,
-    PretrainedConfig,
-)
-from typing import Optional
 from eli5.lime import TextExplainer
 from eli5.lime.samplers import MaskingTextSampler
-import re
+from joblib import dump
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from torch.utils.data import DataLoader, Dataset
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    BertForSequenceClassification,
+    BertModel,
+    BertTokenizer,
+    DistilBertModel,
+    DistilBertTokenizer,
+    PretrainedConfig,
+    PreTrainedModel,
+)
 
 nlp = spacy.load("en_core_web_sm")
 
+# %% [markdown]
+# ## Sample Texts
+#
+# Below are examples of texts used in our analysis, including AI-generated content and a mix of human and AI-assisted writing.
+
+# %%
 # Examples
 test_text_AI = """During my undergraduate studies, I gained a solid foundation in programming languages such as Python and R, as well as experience working with SQL databases. I also had the opportunity to apply these skills in a real-world setting during an internship as a data analyst at a healthcare company. In this role, I was responsible for collecting, cleaning, and analyzing large datasets to provide insights into patient outcomes and healthcare costs.
 Through the Master's in Data Science program at Fordham University, I aim to further develop my expertise in data science and analytics, with a focus on machine learning and predictive modeling. I am particularly interested in courses that cover topics such as deep learning, natural language processing, and data visualization. I am confident that this program will provide me with the skills and knowledge necessary to make valuable contributions to the field of data science.
@@ -45,7 +58,13 @@ In addition to my academic pursuits, I have also gained valuable experience thro
 Furthermore, I have been an active member of the Computer Science Club, where I have participated in various coding competitions and hackathons. These experiences have not only honed my technical skills but also taught me the importance of teamwork and collaboration in solving complex problems. I have also volunteered as a tutor, helping students with programming and data analysis. This experience has allowed me to share my knowledge with others and has reinforced my desire to pursue a career in academia.
 As I embark on the next stage of my academic journey, I am eager to continue building on my experiences and knowledge. I am confident that pursuing a Ph.D. in Computer Science at NYU Tandon School of Engineering will provide me with the tools and resources necessary to achieve my academic and professional goals. I look forward to contributing to the vibrant research community at NYU and making meaningful contributions to the field of Computer Science."""
 
+# %% [markdown]
+# ## Text Preprocessing
+#
+# We define a preprocessing function to clean and format text for classification, ensuring consistency by removing unnecessary characters and patterns.
 
+
+# %%
 def text_cleaning(text):
     """
     This function takes a string as input and returns a formatted version of the string.
@@ -91,6 +110,14 @@ def text_cleaning(text):
     )
 
 
+# %% [markdown]
+# ## Data Preparation
+#
+# In this section, we load and preprocess the data for our analysis.
+#
+# ### Data Loading and Labeling
+
+# %%
 # Read data
 df_HumanGenerated = pd.read_csv(
     "/kaggle/input/capstoneresearchds/df_real.csv", dtype=str
@@ -129,7 +156,11 @@ df = pd.concat([df, df_AIGeneratedLOR])
 df.reset_index(drop=True, inplace=True)
 df = df.sample(len(df))
 
+# %% [markdown]
+# ### Feature Engineering
 
+
+# %%
 # Feature engineering - For further modeling experiment
 def AvgSentence(text):
     plist = text.split("\n")
@@ -143,6 +174,12 @@ df["AvgSentenceByParagraphs"] = df.Text.map(AvgSentence)
 df["Text"] = df["Text"].map(lambda x: text_cleaning(x))
 df = df.drop_duplicates()
 
+# %% [markdown]
+# ### Data Split
+#
+# We divide the data into training and test sets to evaluate our models.
+
+# %%
 # Train Test Split
 X_train, X_test, y_train, y_test = train_test_split(
     df.drop("Target", axis=1), df.Target, train_size=0.80
@@ -157,6 +194,12 @@ y_LORs = y_test.loc[test_sentences_LOR_ids]
 test_sentences_SOI = X_test.loc[test_sentences_SOI_ids].Text.to_list()
 y_SOIs = y_test.loc[test_sentences_SOI_ids]
 
+# %% [markdown]
+# ## Baseline Models
+#
+# We start with baseline models using traditional machine learning techniques, such as logistic regression and naive Bayes, combined with TF-IDF vectorization.
+
+# %%
 ## Logistic Regression + TF-IDF Pipeline
 model_lr = Pipeline([("tf-idf", TfidfVectorizer()), ("clf", LogisticRegression())])
 model_lr.fit(X=train_sentences, y=y_train)
@@ -177,6 +220,14 @@ print(classification_report(y_test, model_nb.predict(test_sentences)))
 # dump(model_lr, "baseline_model_lr.joblib");
 # dump(model_nb, "baseline_model_nb.joblib");
 
+# %% [markdown]
+# ## Transformer-based Models
+#
+# We then explore more advanced models based on Transformers.
+#
+# ### Early Stopping
+
+# %%
 # Transformers-based models
 
 
@@ -212,6 +263,13 @@ class EarlyStopping:
         )
 
 
+# %% [markdown]
+# ### DistilBERT Model Implementation
+#
+# Here, we implement DistilBERT, a streamlined version of the BERT model.
+
+
+# %%
 ## DistilBert
 class TextDataset(Dataset):
     def __init__(self, encodings, labels):
@@ -273,6 +331,10 @@ class TransformerBasedModelDistilBert(nn.Module):
         return logits
 
 
+# %% [markdown]
+# ### DistilBERT Model Training
+
+# %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = TransformerBasedModelDistilBert().to(device)
 
@@ -324,6 +386,10 @@ for epoch in range(num_epochs):
         f"Epoch {epoch + 1} out of {num_epochs} | Train Loss: {train_loss / train_total:.6f} | Test Accuracy: {correct / total:.6f}"
     )
 
+# %% [markdown]
+# ### DistilBERT Model Saving
+
+# %%
 ### best weights
 model.load_state_dict(torch.load("checkpoint.pt"))
 
@@ -360,6 +426,12 @@ Custom_HF_Model = MyHFModel(config)
 
 Custom_HF_Model.save_pretrained("HF_DistilBertBasedModelAppDocs")
 
+# %% [markdown]
+# ### BERT Model Implementation
+#
+# Next, we implement the standard BERT model.
+
+# %%
 ##########
 # Bert
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -405,6 +477,10 @@ class TransformerBasedModelBert(nn.Module):
         return logits
 
 
+# %% [markdown]
+# ### BERT Model Training
+
+# %%
 model = TransformerBasedModelBert().to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
@@ -455,6 +531,10 @@ for epoch in range(num_epochs):
         f"Epoch {epoch + 1} out of {num_epochs} | Train Loss: {train_loss / train_total:.6f} | Test Accuracy: {correct / total:.6f}"
     )
 
+# %% [markdown]
+# ### BERT Model Saving
+
+# %%
 ### best weights
 model.load_state_dict(torch.load("checkpoint.pt"))
 
@@ -489,6 +569,12 @@ Custom_HF_Model = MyHFModel_BertBased(config)
 
 Custom_HF_Model.save_pretrained("HF_BertBasedModelAppDocs")
 
+# %% [markdown]
+# ## Extended Experiments with Additional Data
+#
+# We expand our training dataset by incorporating Wikipedia data to enhance model performance.
+
+# %%
 ## Training with Academic App docs + Wiki
 df_wiki = pd.read_csv("GPT-wiki-intro.csv").sample(30000)
 originals = pd.DataFrame(df_wiki["wiki_intro"]).rename({"wiki_intro": "Text"}, axis=1)
@@ -508,6 +594,10 @@ df_larger["Text"] = df_larger["Text"].map(lambda x: text_cleaning(x))
 df_larger = df_larger.drop_duplicates()
 df_larger.reset_index(drop=True, inplace=True)
 
+# %% [markdown]
+# ### Baseline Models with Extended Data
+
+# %%
 # Train Test Split
 X_train, X_test, y_train, y_test = train_test_split(
     df_larger.drop("Target", axis=1), df_larger.Target, train_size=0.80
@@ -529,9 +619,18 @@ print(f"TF-IDF + NB")
 print(f"Accuracy: {model_nb.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_nb.predict(test_sentences)))
 
+# %% [markdown]
+# ### Saving Extended Baseline Models
+
+# %%
 # Save baseline model
 dump(model_lr, "baseline_model_lr2.joblib")
 dump(model_nb, "baseline_model_nb2.joblib")
+
+# %% [markdown]
+# ### DistilBERT Model with Extended Data
+
+# %%
 # Transformers-based models
 
 ## DistilBert
@@ -610,6 +709,10 @@ for epoch in range(num_epochs):
         f"Epoch {epoch + 1} out of {num_epochs} | Train Loss: {train_loss / train_total:.6f} | Test Accuracy: {correct / total:.6f}"
     )
 
+# %% [markdown]
+# ### Saving Extended DistilBERT Model
+
+# %%
 ### best weights
 model.load_state_dict(torch.load("checkpoint.pt"))
 
@@ -619,6 +722,10 @@ Custom_HF_Model = MyHFModel(config)
 
 Custom_HF_Model.save_pretrained("HF_DistilBertBasedModelAppDocs2")
 
+# %% [markdown]
+# ### BERT Model with Extended Data
+
+# %%
 ##########
 # Bert
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -692,6 +799,10 @@ for epoch in range(num_epochs):
         f"Epoch {epoch + 1} out of {num_epochs} | Train Loss: {train_loss / train_total:.6f} | Test Accuracy: {correct / total:.6f}"
     )
 
+# %% [markdown]
+# ### Saving Extended BERT Model
+
+# %%
 ### best weights
 model.load_state_dict(torch.load("checkpoint.pt"))
 
