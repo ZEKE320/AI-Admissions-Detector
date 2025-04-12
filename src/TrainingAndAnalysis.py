@@ -58,7 +58,7 @@ As I embark on the next stage of my academic journey, I am eager to continue bui
 
 
 # %%
-def text_cleaning(text):
+def text_cleaning(text: str) -> str:
     """This function takes a string as input and returns a formatted version of the string.
 
     The function replaces specific substrings in the input string with empty strings,
@@ -154,7 +154,7 @@ df = df.sample(len(df))
 
 # %%
 # Feature engineering - For further modeling experiment
-def AvgSentence(text):
+def AvgSentence(text: str) -> float:
     plist = text.split("\n")
     return np.mean([p.count(".") for p in plist])
 
@@ -228,7 +228,7 @@ class EarlyStopping:
     def __init__(self, patience: int = 2, delta: float = 0.000001) -> None:
         self.patience: int = patience
         self.counter: int = 0
-        self.best_score: float | None = None
+        self.best_score: Optional[float] = None
         self.delta: float = delta
 
     def __call__(self, val_loss: float, model: nn.Module) -> bool:
