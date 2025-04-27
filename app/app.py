@@ -1,5 +1,6 @@
 import re
 import string
+from enum import Enum
 
 import eli5
 import joblib
@@ -9,20 +10,37 @@ import shap
 import spacy
 import streamlit as st
 import torch
+from app.custom_models import (
+    HF_BertBasedModelAppDocs,
+    HF_DistilBertBasedModelAppDocs,
+)
 from eli5.lime import TextExplainer
 from eli5.lime.samplers import MaskingTextSampler
 from transformers import AutoTokenizer
 
-from custom_models import (
-    HF_BertBasedModelAppDocs,
-    HF_DistilBertBasedModelAppDocs,
-)
+
+class BaselineModel(Enum):
+    LOGISTIC_REGRESSION = "Logistic Regression"
+    NAIVE_BAYES = "Naive Bayes"
+    LOGISTIC_REGRESSION_FOR_THESIS = "Logistic Regression (for thesis)"
+    NAIVE_BAYES_FOR_THESIS = "Naive Bayes (for thesis)"
+
+
+class TransformerModel(Enum):
+    DISTILBERT = "DistilBERT-based model (BERT light)"
+    DISTILBERT_FOR_THESIS = "DistilBERT-based model (BERT light, for thesis)"
+    BERT = "BERT-based model"
+    BERT_FOR_THESIS = "BERT-based model"
+
 
 models_available = {
-    "Logistic Regression": "models/baseline_model_lr_longer.joblib",
-    "Naive Bayes": "models/baseline_model_nb_longer.joblib",
-    "DistilBERT-based model (BERT light)": "ferdmartin/HF_DistilBertBasedModelAppDocs",
-    "BERT-based model": "ferdmartin/HF_BertBasedModelAppDocs",
+    BaselineModel.LOGISTIC_REGRESSION.value: "models/baseline_model_lr_longer.joblib",
+    BaselineModel.NAIVE_BAYES.value: "models/baseline_model_nb_longer.joblib",
+    TransformerModel.DISTILBERT.value: "ferdmartin/HF_DistilBertBasedModelAppDocs2",
+    TransformerModel.BERT.value: "ferdmartin/HF_BertBasedModelAppDocs2",
+    BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value: "models/baseline_thesis_model_lr.joblib",
+    BaselineModel.NAIVE_BAYES_FOR_THESIS.value: "models/baseline_thesis_model_nb.joblib",
+    TransformerModel.DISTILBERT_FOR_THESIS.value: "models/distilbert-for-thesis",
 }
 
 
@@ -61,7 +79,11 @@ def main() -> None:
     assert option in models_available, "Invalid model option selected"
 
     # Load the selected trained model
-    if option in ("BERT-based model", "DistilBERT-based model (BERT light)"):
+    if option in (
+        TransformerModel.BERT.value,
+        TransformerModel.DISTILBERT.value,
+        TransformerModel.DISTILBERT_FOR_THESIS.value,
+    ):
         tokenizer = load_tokenizer(option)
         model = load_model(option)
     else:
@@ -87,7 +109,12 @@ def main() -> None:
         else:
             with st.spinner("Wait for the magic 🪄🔮"):
                 # Use model
-                if option in ("Naive Bayes", "Logistic Regression"):
+                if option in (
+                    BaselineModel.NAIVE_BAYES.value,
+                    BaselineModel.LOGISTIC_REGRESSION.value,
+                    BaselineModel.NAIVE_BAYES_FOR_THESIS.value,
+                    BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value,
+                ):
                     prediction, predict_proba = nb_lr(model, text)
                     st.session_state["sklearn"] = True
                 else:
@@ -117,7 +144,12 @@ def main() -> None:
     if st.button("Model Explanation"):
         # Check if there's text in the session state
         if "text" in st.session_state and "prediction" in st.session_state:
-            if option in ("Naive Bayes", "Logistic Regression"):
+            if option in (
+                BaselineModel.NAIVE_BAYES.value,
+                BaselineModel.LOGISTIC_REGRESSION.value,
+                BaselineModel.NAIVE_BAYES_FOR_THESIS.value,
+                BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value,
+            ):
                 with st.spinner("Wait for it 💭..."):
                     explainer = TextExplainer(sampler=MaskingTextSampler())
                     explainer.fit(st.session_state["text"], model.predict_proba)
@@ -247,14 +279,17 @@ def pred_str(prediction):
 
 @st.cache(allow_output_mutation=True, suppress_st_warning=True)
 def load_tokenizer(option):
-    if option == "BERT-based model":
+    if option == TransformerModel.BERT.value:
         tokenizer = AutoTokenizer.from_pretrained(
             "bert-base-uncased",
             padding="max_length",
             max_length=512,
             truncation=True,
         )
-    else:
+    elif (
+        option == TransformerModel.DISTILBERT.value
+        or option == TransformerModel.DISTILBERT_FOR_THESIS.value
+    ):
         tokenizer = AutoTokenizer.from_pretrained(
             "distilbert-base-uncased",
             padding="max_length",
@@ -266,13 +301,16 @@ def load_tokenizer(option):
 
 @st.cache(allow_output_mutation=False, suppress_st_warning=True)
 def load_model(option):
-    if option == "BERT-based model":
-        model = HF_BertBasedModelAppDocs.from_pretrained(
-            "ferdmartin/HF_BertBasedModelAppDocs2"
-        ).to(device)
-    else:
+    # Use configured model paths for each transformer model
+    model_path = models_available[option]
+    if option == TransformerModel.BERT.value:
+        model = HF_BertBasedModelAppDocs.from_pretrained(model_path).to(device)
+    elif option == TransformerModel.DISTILBERT.value:
+        model = HF_DistilBertBasedModelAppDocs.from_pretrained(model_path).to(device)
+    elif option == TransformerModel.DISTILBERT_FOR_THESIS.value:
+        # Load local thesis model weights from safetensors file
         model = HF_DistilBertBasedModelAppDocs.from_pretrained(
-            "ferdmartin/HF_DistilBertBasedModelAppDocs2"
+            model_path, local_files_only=True
         ).to(device)
     return model
 
