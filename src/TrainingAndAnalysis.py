@@ -37,9 +37,10 @@ nlp = spacy.load("en_core_web_sm")
 # ## Sample Texts
 #
 # Below are examples of texts used in our analysis, including AI-generated content and a mix of human and AI-assisted writing.
+#
+# Examples:
 
 # %%
-# Examples
 test_text_AI = """During my undergraduate studies, I gained a solid foundation in programming languages such as Python and R, as well as experience working with SQL databases. I also had the opportunity to apply these skills in a real-world setting during an internship as a data analyst at a healthcare company. In this role, I was responsible for collecting, cleaning, and analyzing large datasets to provide insights into patient outcomes and healthcare costs.
 Through the Master's in Data Science program at Fordham University, I aim to further develop my expertise in data science and analytics, with a focus on machine learning and predictive modeling. I am particularly interested in courses that cover topics such as deep learning, natural language processing, and data visualization. I am confident that this program will provide me with the skills and knowledge necessary to make valuable contributions to the field of data science.
 Furthermore, I am impressed with the collaborative and interdisciplinary nature of the program, and I am excited about the opportunity to work with fellow students and faculty members from diverse backgrounds and fields. I am also attracted to the program's emphasis on practical, hands-on learning, which I believe will prepare me well for a career in data science.
@@ -302,6 +303,11 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
+# %% [markdown]
+# ### DistilBERT Model Training
+
+
+# %%
 class TransformerBasedModelDistilBert(nn.Module):
     def __init__(self) -> None:
         super(TransformerBasedModelDistilBert, self).__init__()
@@ -325,10 +331,6 @@ class TransformerBasedModelDistilBert(nn.Module):
         return logits
 
 
-# %% [markdown]
-# ### DistilBERT Model Training
-
-# %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = TransformerBasedModelDistilBert().to(device)
 
@@ -450,6 +452,11 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
+# %% [markdown]
+# ### BERT Model Training
+
+
+# %%
 class TransformerBasedModelBert(nn.Module):
     def __init__(self) -> None:
         super(TransformerBasedModelBert, self).__init__()
@@ -471,10 +478,6 @@ class TransformerBasedModelBert(nn.Module):
         return logits
 
 
-# %% [markdown]
-# ### BERT Model Training
-
-# %%
 model = TransformerBasedModelBert().to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
