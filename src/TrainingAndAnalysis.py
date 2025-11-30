@@ -123,43 +123,54 @@ def text_cleaning(text: str) -> str:
 # ### Data Loading and Labeling
 
 # %%
-# Read data
-df_HumanGenerated = pd.read_csv(
-    "/kaggle/input/capstoneresearchds/df_real.csv", dtype=str
+# Read combined SOI dataset with human and GPT abstracts
+MODEL_NAME = "gpt-4.1"
+DATA_DIR = "../data"
+df_raw = pd.concat(
+    [
+        pd.read_csv(f"{DATA_DIR}/500_ieee_abstracts_corpora.csv", dtype=str),
+        pd.read_csv(f"{DATA_DIR}/2012_znonIS_500_SRA.csv", dtype=str),
+    ]
+).query(
+    "`human_abstract` != '' and not `human_abstract`.isna()"
+    f" and `{MODEL_NAME}_abstract` != '' and not `{MODEL_NAME}_abstract`.isna()"
 )
-df_AIGeneratedSOI = pd.read_csv(
-    "/kaggle/input/capstoneresearchds/GeneratedSOIs.csv", dtype=str
-)
-df_AIGeneratedLOR = pd.read_csv(
-    "/kaggle/input/capstoneresearchds/Generated_LORs.csv", dtype=str
-)
+df_source, df_test = train_test_split(df_raw, test_size=0.1, random_state=SEED)
+df_source.to_csv(f"{DATA_DIR}/thesis_abstract_dataset_source.csv", index=False)
+df_test.to_csv(f"{DATA_DIR}/thesis_abstract_dataset_test.csv", index=False)
 
-# Label data: {Human:0, AI: 1}
-df_HumanGenerated["Target"] = 0
-df_AIGeneratedSOI["Target"] = 1
-df_AIGeneratedLOR["Target"] = 1
-df_AIGeneratedSOI["TypeDoc"] = "SOI"
-df_AIGeneratedLOR["TypeDoc"] = "LOR"
-df_AIGeneratedSOI.rename(
-    {df_AIGeneratedSOI.columns[0]: "ID", df_AIGeneratedSOI.columns[2]: "Text"},
-    axis=1,
-    inplace=True,
+df_source.info()
+df_test.info()
+
+del df_raw, df_test
+
+# %%
+# Build human-generated dataframe
+df_human = pd.DataFrame(
+    {
+        "ID": df_source["file_name"],
+        "Text": df_source["human_abstract"],
+        "TypeDoc": "SOI",
+        "Target": 0,  # 0 is for human
+    }
 )
-df_AIGeneratedSOI["ID"] = df_AIGeneratedSOI.ID.map(lambda x: "0" + str(x))
-df_AIGeneratedLOR.rename({df_AIGeneratedLOR.columns[0]: "Text"}, axis=1, inplace=True)
+# Build AI-generated dataframe
+df_ai = pd.DataFrame(
+    {
+        "ID": df_source["file_name"],
+        "Text": df_source[f"{MODEL_NAME}_abstract"],
+        "TypeDoc": "SOI",
+        "Target": 1,  # 1 is for AI
+    }
+)
+# Combine human and AI data and shuffle
 
-# Get only relevant attributes from the original datasources
-cols = ["ID", "Text", "TypeDoc", "Target"]
-df_HumanGenerated = df_HumanGenerated[cols]
-df_AIGeneratedSOI = df_AIGeneratedSOI[cols]
 
-# Union both human-written and AI generated datasets and shuffle
-df = pd.concat([df_HumanGenerated.dropna(axis=0), df_AIGeneratedSOI])[
-    ["Text", "TypeDoc", "Target"]
-]
-df = pd.concat([df, df_AIGeneratedLOR])
-df.reset_index(drop=True, inplace=True)
-df = df.sample(len(df))
+df = pd.concat([df_human, df_ai], ignore_index=True).astype({"Text": str})
+df = df.sample(frac=1, random_state=SEED).reset_index(
+    drop=True
+)  # shuffle and reset index
+
 
 # %% [markdown]
 # ### Feature Engineering
