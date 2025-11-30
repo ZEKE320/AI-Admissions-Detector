@@ -5,6 +5,7 @@
 
 # %%
 # Import libraries
+import random
 import re
 import string
 from typing import Optional
@@ -32,6 +33,17 @@ from transformers.models.distilbert.modeling_distilbert import DistilBertModel
 from transformers.models.distilbert.tokenization_distilbert import DistilBertTokenizer
 
 nlp = spacy.load("en_core_web_sm")
+
+# Centralize seed management
+SEED = 42
+# Set random seeds for reproducibility
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 # %% [markdown]
 # ## Sample Texts
@@ -175,7 +187,7 @@ df = df.drop_duplicates()
 # %%
 # Train Test Split
 X_train, X_test, y_train, y_test = train_test_split(
-    df.drop("Target", axis=1), df.Target, train_size=0.80
+    df.drop("Target", axis=1), df.Target, train_size=0.80, random_state=SEED
 )
 train_sentences = X_train.Text.to_list()
 test_sentences = X_test.Text.to_list()
@@ -287,8 +299,8 @@ val_encodings = tokenizer(
     test_sentences, padding="max_length", max_length=512, truncation=True
 )
 
-# Include additional features
-columns = X_train.drop(["Text"], axis=1).columns.to_list()
+# only include numeric features (exclude ID, TypeDoc)
+columns = X_train.drop(columns=["Text", "ID", "TypeDoc"]).columns.to_list()
 
 for column in columns:
     train_encodings[column] = X_train[column].to_list()
@@ -436,8 +448,8 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 train_encodings = tokenizer(train_sentences, truncation=True, padding=True)
 val_encodings = tokenizer(test_sentences, truncation=True, padding=True)
 
-# Include additional features
-columns = X_train.drop(["Text"], axis=1).columns.to_list()
+# only include numeric features (exclude ID, TypeDoc)
+columns = X_train.drop(columns=["Text", "ID", "TypeDoc"]).columns.to_list()
 
 for column in columns:
     train_encodings[column] = X_train[column].to_list()
@@ -573,7 +585,7 @@ Custom_HF_Model.save_pretrained("HF_BertBasedModelAppDocs")
 
 # %%
 ## Training with Academic App docs + Wiki
-df_wiki = pd.read_csv("GPT-wiki-intro.csv").sample(30000)
+df_wiki = pd.read_csv("GPT-wiki-intro.csv").sample(30000, random_state=SEED)
 originals = pd.DataFrame(df_wiki["wiki_intro"]).rename({"wiki_intro": "Text"}, axis=1)
 originals["Target"] = 0
 
@@ -583,10 +595,10 @@ generated = pd.DataFrame(df_wiki["generated_intro"]).rename(
 generated["Target"] = 1
 
 Wiki = pd.concat([originals, generated], ignore_index=True)
-Wiki = Wiki.sample(len(Wiki))
+Wiki = Wiki.sample(len(Wiki), random_state=SEED)
 
 df_larger = pd.concat([df[["Text", "Target"]], Wiki], ignore_index=True)
-df_larger = df_larger.sample(len(df_larger))
+df_larger = df_larger.sample(len(df_larger), random_state=SEED)
 df_larger["Text"] = df_larger["Text"].map(lambda x: text_cleaning(x))
 df_larger = df_larger.drop_duplicates()
 df_larger.reset_index(drop=True, inplace=True)
@@ -597,10 +609,14 @@ df_larger.reset_index(drop=True, inplace=True)
 # %%
 # Train Test Split
 X_train, X_test, y_train, y_test = train_test_split(
-    df_larger.drop("Target", axis=1), df_larger.Target, train_size=0.80
+    df_larger.drop("Target", axis=1),
+    df_larger.Target,
+    train_size=0.80,
+    random_state=SEED,
 )
 train_sentences = X_train.Text.to_list()
 test_sentences = X_test.Text.to_list()
+
 # Baseline models
 model_lr = Pipeline([("tf-idf", TfidfVectorizer()), ("clf", LogisticRegression())])
 model_lr.fit(X=train_sentences, y=y_train)
@@ -641,8 +657,8 @@ val_encodings = tokenizer(
     test_sentences, padding="max_length", max_length=512, truncation=True
 )
 
-# Include additional features
-columns = X_train.drop(["Text"], axis=1).columns.to_list()
+# only include numeric features (exclude ID, TypeDoc)
+columns = X_train.drop(columns=["Text", "ID", "TypeDoc"]).columns.to_list()
 
 for column in columns:
     train_encodings[column] = X_train[column].to_list()
@@ -731,8 +747,8 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 train_encodings = tokenizer(train_sentences, truncation=True, padding=True)
 val_encodings = tokenizer(test_sentences, truncation=True, padding=True)
 
-# Include additional features
-columns = X_train.drop(["Text"], axis=1).columns.to_list()
+# only include numeric features (exclude ID, TypeDoc)
+columns = X_train.drop(columns=["Text", "ID", "TypeDoc"]).columns.to_list()
 
 for column in columns:
     train_encodings[column] = X_train[column].to_list()
