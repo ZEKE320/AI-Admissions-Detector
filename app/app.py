@@ -10,7 +10,7 @@ import shap
 import spacy
 import streamlit as st
 import torch
-from app.custom_models import (
+from custom_models import (
     HF_BertBasedModelAppDocs,
     HF_DistilBertBasedModelAppDocs,
 )
@@ -24,11 +24,14 @@ class BaselineModel(Enum):
     NAIVE_BAYES = "Naive Bayes"
     LOGISTIC_REGRESSION_FOR_THESIS = "Logistic Regression (for thesis)"
     NAIVE_BAYES_FOR_THESIS = "Naive Bayes (for thesis)"
+    LOGISTIC_REGRESSION_FOR_THESIS_HARD = "Logistic Regression (for thesis, hard)"
+    NAIVE_BAYES_FOR_THESIS_HARD = "Naive Bayes (for thesis, hard)"
 
 
 class TransformerModel(Enum):
     DISTILBERT = "DistilBERT-based model (BERT light)"
     DISTILBERT_FOR_THESIS = "DistilBERT-based model (BERT light, for thesis)"
+    DISTILBERT_FOR_THESIS_HARD = "DistilBERT-based model (BERT light, for thesis, hard)"
     BERT = "BERT-based model"
     BERT_FOR_THESIS = "BERT-based model"
 
@@ -41,6 +44,9 @@ models_available = {
     BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value: "models/baseline_thesis_model_lr.joblib",
     BaselineModel.NAIVE_BAYES_FOR_THESIS.value: "models/baseline_thesis_model_nb.joblib",
     TransformerModel.DISTILBERT_FOR_THESIS.value: "models/distilbert-for-thesis",
+    BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS_HARD.value: "models/baseline_thesis_model_hard_lr.joblib",
+    BaselineModel.NAIVE_BAYES_FOR_THESIS_HARD.value: "models/baseline_thesis_model_hard_nb.joblib",
+    TransformerModel.DISTILBERT_FOR_THESIS_HARD.value: "models/distilbert-for-thesis-hard",
 }
 
 
@@ -83,6 +89,7 @@ def main() -> None:
         TransformerModel.BERT.value,
         TransformerModel.DISTILBERT.value,
         TransformerModel.DISTILBERT_FOR_THESIS.value,
+        TransformerModel.DISTILBERT_FOR_THESIS_HARD.value,
     ):
         tokenizer = load_tokenizer(option)
         model = load_model(option)
@@ -114,6 +121,8 @@ def main() -> None:
                     BaselineModel.LOGISTIC_REGRESSION.value,
                     BaselineModel.NAIVE_BAYES_FOR_THESIS.value,
                     BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value,
+                    BaselineModel.NAIVE_BAYES_FOR_THESIS_HARD.value,
+                    BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS_HARD.value,
                 ):
                     prediction, predict_proba = nb_lr(model, text)
                     st.session_state["sklearn"] = True
@@ -149,6 +158,8 @@ def main() -> None:
                 BaselineModel.LOGISTIC_REGRESSION.value,
                 BaselineModel.NAIVE_BAYES_FOR_THESIS.value,
                 BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS.value,
+                BaselineModel.NAIVE_BAYES_FOR_THESIS_HARD.value,
+                BaselineModel.LOGISTIC_REGRESSION_FOR_THESIS_HARD.value,
             ):
                 with st.spinner("Wait for it 💭..."):
                     explainer = TextExplainer(sampler=MaskingTextSampler())
@@ -289,6 +300,7 @@ def load_tokenizer(option):
     elif (
         option == TransformerModel.DISTILBERT.value
         or option == TransformerModel.DISTILBERT_FOR_THESIS.value
+        or option == TransformerModel.DISTILBERT_FOR_THESIS_HARD.value
     ):
         tokenizer = AutoTokenizer.from_pretrained(
             "distilbert-base-uncased",
@@ -307,7 +319,10 @@ def load_model(option):
         model = HF_BertBasedModelAppDocs.from_pretrained(model_path).to(device)
     elif option == TransformerModel.DISTILBERT.value:
         model = HF_DistilBertBasedModelAppDocs.from_pretrained(model_path).to(device)
-    elif option == TransformerModel.DISTILBERT_FOR_THESIS.value:
+    elif (
+        option == TransformerModel.DISTILBERT_FOR_THESIS.value
+        or option == TransformerModel.DISTILBERT_FOR_THESIS_HARD.value
+    ):
         # Load local thesis model weights from safetensors file
         model = HF_DistilBertBasedModelAppDocs.from_pretrained(
             model_path, local_files_only=True
