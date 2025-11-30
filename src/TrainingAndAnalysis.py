@@ -233,8 +233,8 @@ print(f"Accuracy: {model_nb.score(test_sentences, y_test)}\n")
 print(classification_report(y_test, model_nb.predict(test_sentences)))
 
 # Save baseline models
-# dump(model_lr, "baseline_model_lr.joblib");
-# dump(model_nb, "baseline_model_nb.joblib");
+dump(model_lr, "baseline_model_lr.joblib")
+dump(model_nb, "baseline_model_nb.joblib")
 
 # %% [markdown]
 # ## Transformer-based Models
