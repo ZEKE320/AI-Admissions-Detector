@@ -302,6 +302,10 @@ class TextDataset(Dataset):
 
 
 tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+assert isinstance(tokenizer, DistilBertTokenizer), (
+    "tokenizer is not a DistilBertTokenizer"
+)
+
 # Encode the text data
 train_encodings = tokenizer(
     train_sentences, padding="max_length", max_length=512, truncation=True
