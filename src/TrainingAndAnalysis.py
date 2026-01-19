@@ -126,15 +126,19 @@ def text_cleaning(text: str) -> str:
 # Read combined SOI dataset with human and GPT abstracts
 MODEL_NAME = "gpt-4.1"
 DATA_DIR = "../data"
+ai_col = f"{MODEL_NAME}_abstract"
 df_raw = pd.concat(
     [
         pd.read_csv(f"{DATA_DIR}/500_ieee_abstracts_corpora.csv", dtype=str),
         pd.read_csv(f"{DATA_DIR}/2012_znonIS_500_SRA.csv", dtype=str),
     ]
-).query(
-    "`human_abstract` != '' and not `human_abstract`.isna()"
-    f" and `{MODEL_NAME}_abstract` != '' and not `{MODEL_NAME}_abstract`.isna()"
 )
+df_raw = df_raw[
+    (df_raw["human_abstract"] != "")
+    & (df_raw["human_abstract"].notna())
+    & (df_raw[ai_col] != "")
+    & (df_raw[ai_col].notna())
+]
 df_source, df_test = train_test_split(df_raw, test_size=0.1, random_state=SEED)
 df_source.to_csv(f"{DATA_DIR}/thesis_abstract_dataset_source.csv", index=False)
 df_test.to_csv(f"{DATA_DIR}/thesis_abstract_dataset_test.csv", index=False)
