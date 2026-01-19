@@ -1,0 +1,9 @@
+{
+  "architectures": [
+    "MyHFModel_DistilBased"
+  ],
+  "final_dropout": 0.55,
+  "model_type": "distilbert",
+  "torch_dtype": "float32",
+  "transformers_version": "4.51.1"
+}
