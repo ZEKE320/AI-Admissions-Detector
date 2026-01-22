@@ -216,36 +216,11 @@ def format_text(text: str) -> str:
         [token.text for token in doc if token.ent_type_ not in ["PERSON", "DATE"]]
     )
 
-    pattern1 = r"f\d+"
-    pattern2 = r"\b[A-Za-z]+\d+\b"
-    pattern3 = r"\[(.*?)\]"
-
-    text = re.sub(pattern1, "", text)
-    text = re.sub(pattern2, "", text)
-    text = re.sub(pattern3, "", text)
-
     return (
         text.replace("REDACTED", "")
         .lower()
-        .replace("  ", " ")
-        .replace("[Name]", "")
-        .replace("[your name]", "")
-        .replace("\n your name", "")
-        .replace("dear admissions committee,", "")
-        .replace("sincerely,", "")
-        .replace("[university's name]", "fordham")
-        .replace("dear sir/madam,", "")
-        .replace("– statement of intent  ", "")
-        .replace(
-            "program: master of science in data analytics  name of applicant:    ",
-            "",
-        )
-        .replace("data analytics", "data science")
-        .replace("| \u200b", "")
-        .replace("m.s. in data science at lincoln center  ", "")
         .translate(str.maketrans("", "", string.punctuation))
         .strip()
-        .lstrip()
     )
 
 
